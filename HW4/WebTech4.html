@@ -1,0 +1,208 @@
+<!DOCTYPE HTML>
+<html>
+    <head>     
+        <style type="text/css">
+            #submit_query {
+                text-align:center;
+            }
+        </style>
+    </head>
+    <title>Homework4</title>
+    <body>
+        <div id="submit_query">
+            <form>
+                Enter URL for Company List XML File<br><br>
+                <input type="text" id="input_text"><br><br>
+                <input type="submit" id="xml_submit" value="Submit Query" onClick="show_stationslist()">
+            </form>
+        </div>
+        
+        <script language="javascript">
+         
+            var xmlDoc;
+            var xmlhttp;
+            var html_table = "";
+            
+            function loadXML(url) 
+            {
+                if (window.XMLHttpRequest) // code for IE7+, Firefox, Chrome, Opera, Safari
+                {
+                    xmlhttp = new XMLHttpRequest(); 
+                }
+                else // code for IE6, IE5
+                {
+                    xmlhttp = new ActiveXObject("Microsoft.XMLHTTP"); 
+                }
+                xmlhttp.open("GET",url,false); // open, send, responseXML are
+                xmlhttp.send(); // properties of XMLHTTPRequest
+                
+                if (xmlhttp.status == 404)
+                {
+                    return 404;
+                }
+                
+                xmlDoc=xmlhttp.responseXML;
+                return xmlDoc;
+            }
+            
+            function show_stationslist() 
+            {
+                var xml_file_name = document.getElementById("input_text").value;
+                xmlDoc = loadXML(xml_file_name);
+                
+                // alert(xmlDoc.documentElement.nodeName);
+                
+                if(!xml_file_name) // // Error for empty textbox
+                {
+                    alert("Empty");
+                    return 0;    
+                }
+                if(xmlDoc == null) // Error for Invalid XML file
+                {
+                    alert("Error in XML file(null)");
+                    return 0;
+                }
+                if(xmlDoc == 404) // Error for XML file does not exist(wrong url)
+                {
+                    alert("XML file does not exist(404)");
+                    return 0;
+                } 
+                if(xmlDoc == undefined) // Error for Invalid XML file
+                {
+                    alert("Error in XML file(undefined)");
+                    return 0;
+                }
+                if(xmlDoc.documentElement.nodeName=="parsererror") // Error for Invalid XML file
+                {
+                    alert("Error in XML file(parsererror)");
+                    return 0;
+                }      
+                var error_check = xml_to_html();
+                if(error_check == -2) // Error for No radio station
+                {
+                    alert("No radio station");
+                    return 0;
+                }   
+                
+                new_window = window.open("", "", "scrollbars=yes,resizable=yes,toolbar=no, width=1000px, height=500px");
+                
+                new_window.document.write("<html><head></head><body style='margin:0;'><table style='width:1000px; height:500px;' border='1'>" + html_table + "</table></body><noscript></html>");
+                html_table = ""; // initialization
+                new_window.document.close();
+            }
+            
+            function xml_to_html() 
+            {
+                // Table Header
+                var data = xmlDoc.getElementsByTagName("Data");
+                html_table += "<tr>";
+                
+                for(var i = 0; i < data.length; i++) // number of data = 6
+                { 
+                    html_table += "<th>";
+                    // html_table += data.item(i).firstChild.nodeValue;
+                    html_table += data[i].childNodes[0].nodeValue;
+                    html_table += "</th>";
+                }
+                
+                html_table += "</tr>";
+                
+                // Table Body
+                var row = xmlDoc.getElementsByTagName("Row");
+                
+                // Error for no radio station
+                if(row.length == 0)
+                {
+                    html_table == "";
+                    return -2;    
+                }
+                
+                for(var i = 0; i < row.length; i++) // number of rows = 3
+                {           
+                    var row_child = row[i].children;
+                    html_table += "<tr>";
+                    
+                    for(var j = 0; j < row_child.length; j++) // number of row_child = 6
+                    {                                   // CallSign,Frequency,Location,Format,HomePage,Logo
+
+                        // alert(row_child[j]);
+                        
+                        //if(row_child[j].nodeType != ELEMENT_NODE)
+                        //    continue;
+                        
+                        // alert(row_child[j].childNodes[0]);
+                        // alert(row_child.item(j).firstChild);
+                        
+                        // if (row_child[j].childNodes[0] == undefined) {
+                            // alert(row_child.item(j).firstChild);
+                            // alert(row_child[j].childNodes[0].nodeValue);
+                            // alert(row_child[j].childNodes[0]);
+                            // row_child[j].childNodes[0].nodeValue = "sdfsdf";
+                            // alert(row_child[j].childNodes[0].nodeValue);
+                        // }
+                        
+                        
+                        if (row_child[j].childNodes[0] == undefined)
+                             // if(row_child.item(j).firstChild == null)
+                        {
+                            html_table += "<td>" + " " + "</td>";
+                            continue;     
+                        }
+                        else if (row_child[j].childNodes[0].nodeValue == null)
+                             // if(row_child.item(j).firstChild == null)
+                        {
+                            html_table += "<td>" + " " + "</td>";
+                            continue;     
+                        }
+                    
+                            
+                        if(row_child[j].nodeName == "Location") 
+                        {
+                            var location = row_child[j].children;
+                            var list = "<ul>";
+                            
+                            for(var k = 0; k < location.length; k++) 
+                            {
+                                if (location[k].childNodes[0] == undefined)
+                                 // if(row_child.item(j).firstChild == null)
+                                {
+                                    html_table += " ";
+                                    continue;     
+                                }
+                                else if (location[k].childNodes[0].nodeValue == null)
+                                 // if(row_child.item(j).firstChild == null)
+                                {
+                                    html_table += " ";
+                                    continue;     
+                                }
+                                else
+                                    list += "<li>" + location[k].childNodes[0].nodeValue + "</li>";
+                            }
+                            list += "</ul>";
+                            html_table += "<td>" + list + "</td>";    
+                        }
+                        else if(row_child[j].nodeName == "HomePage")
+                        {
+                            var homepage = row_child[j].childNodes[0].nodeValue;
+                            html_table += "<td>" + "<a href='" + homepage + "' >" + homepage + "</a>" + "</td>";
+                        }
+                        else if(row_child[j].nodeName == "Logo") 
+                        {
+                            var image = row_child[j].childNodes[0].nodeValue;
+    
+                            
+                            html_table += "<td>" + "<img src='" + image + "' style='width:100%; height:100%;'     alt='X'>" + "</td>";
+                        } 
+                        else          
+                            html_table += "<td>" + row_child[j].childNodes[0].nodeValue + "</td>";                    
+                        
+                    }
+                    html_table += "</tr>";
+                }
+                return 0;
+            }
+        
+        </script>
+    <noscript>   
+    </body>
+</html>
